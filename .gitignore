@@ -57,6 +57,10 @@ results/
 *.h5
 *.hdf5
 
+# Dataset directories (large, can be re-downloaded)
+data/
+cache/
+
 # OS files
 .DS_Store
 Thumbs.db
@@ -65,3 +69,20 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+
+# Old CogSci submission (rejected) — superseded by IEEE_manuscript/
+manuscript/
+# Internal planning notes not for public release
+REVISION_PLAN.md
+# Private research notes
+sources/
+
+# LaTeX build artifacts
+*.aux
+*.bcf
+*.run.xml
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+*.toc

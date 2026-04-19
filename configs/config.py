@@ -1,10 +1,8 @@
 """
 =============================================================================
-Project Configuration: Adaptive Heuristics in Social Cognition
-CogSci 2026 Submission
+Project Configuration: Attention Mechanisms for Theory of Mind
+IEEE BIBM 2026 Submission (revised from CogSci 2026 #3240)
 =============================================================================
-
-"When Fast is Better: Neural Signatures of Adaptive Heuristics in Social Cognition"
 
 This configuration file centralizes all paths, parameters, and constants
 used throughout the analysis pipeline.
@@ -17,20 +15,26 @@ from pathlib import Path
 # PROJECT PATHS
 # =============================================================================
 
-# Base paths
-PROJECT_ROOT = Path("/root/autodl-fs/CogSci")
-DATA_ROOT = PROJECT_ROOT / "data"
-PROJECT_DIR = PROJECT_ROOT / "project_3"
+# Base paths — everything lives under the project directory on autodl-fs
+PROJECT_DIR = Path("/autodl-fs/data/CCN_Competition/"
+                   "Attention Mechanisms for Theory of Mind "
+                   "Weak Brain-Transformer Alignment Despite Behavioral Success")
 
-# Related project paths (for cross-project integration)
-PROJECT_1_DIR = PROJECT_ROOT / "project_1"
-PROJECT_2_DIR = PROJECT_ROOT / "project_2"
+# Data paths
+DATA_DIR = PROJECT_DIR / "data"
+DS002345_DIR = DATA_DIR / "ds002345"          # Narratives dataset (primary)
+DS002345_FMRI = DS002345_DIR / "fmri"         # fMRI NIfTI files
+DS002345_STIMULI = DS002345_DIR / "stimuli"    # Audio WAV files
+DS002345_TRANSCRIPTS = DS002345_DIR / "transcripts"  # Whisper transcripts
+DS002345_REPO = DS002345_DIR / "repo"          # OpenNeuro git-annex metadata
+DS000109_DIR = DATA_DIR / "ds000109"           # Mitchell false-belief (backup)
 
 # Output directories (base)
 RESULTS_DIR = PROJECT_DIR / "results"
 LOGS_DIR = PROJECT_DIR / "logs"
 MODELS_DIR = PROJECT_DIR / "models" / "huggingface_cache"
 MODEL_CACHE_DIR = MODELS_DIR  # Alias for HuggingFace cache
+CACHE_DIR = PROJECT_DIR / "cache"             # whisper, torch, etc.
 
 # Timestamped run directories (will be set by initialize_run_directories)
 CURRENT_RUN_DIR = None
@@ -109,57 +113,58 @@ def ensure_run_directories():
             initialize_run_directories()
 
 # =============================================================================
-# SUBJECT LIST (Same as P1 and P2)
+# SUBJECT LIST (ds002345 Shapes task — 59 subjects)
 # =============================================================================
 
+EXCLUDED_SUBJECTS = ['sub-115']  # FOV doesn't cover posterior ROIs (rTPJ, lTPJ, PC ≈ 0)
+
 def get_subject_list():
-    """Get list of all available subjects"""
+    """Get list of subjects with shapes fMRI data"""
     subjects = []
-    for item in DATA_ROOT.iterdir():
-        if item.is_dir() and item.name.isdigit():
-            subjects.append(item.name)
-    return sorted(subjects)
+    if DS002345_FMRI.exists():
+        for item in sorted(DS002345_FMRI.iterdir()):
+            if item.is_dir() and item.name.startswith('sub-'):
+                if item.name in EXCLUDED_SUBJECTS:
+                    continue
+                # Verify both tasks exist
+                social = item / "func" / f"{item.name}_task-shapessocial_bold.nii.gz"
+                physical = item / "func" / f"{item.name}_task-shapesphysical_bold.nii.gz"
+                if social.exists() and physical.exists():
+                    subjects.append(item.name)
+    return subjects
 
 SUBJECTS = get_subject_list()
 
 # =============================================================================
-# SOCIAL COGNITION TASK PARAMETERS
+# ds002345 SHAPES TASK PARAMETERS
 # =============================================================================
 
-SOCIAL_TASK = {
-    'name': 'SOCIAL',
-    'full_name': 'Social Cognition / Theory of Mind',
-    'runs': ['LR', 'RL'],
+SHAPES_TASK = {
+    'name': 'shapes',
+    'full_name': 'Animated Shapes: Social vs Physical Narration',
     'conditions': {
-        'mental': 'Theory of Mind (intentional)',
-        'random': 'Random movement (mechanical)',
+        'social': 'Social/intentional description (ToM)',
+        'physical': 'Physical/geometric description (control)',
     },
-    'contrasts': ['mental_vs_rnd'],
-    'tr': 0.72,
-    'n_volumes': 274,  # Per run
+    'task_names': ['shapessocial', 'shapesphysical'],
+    'tr': 1.5,
+    'intro_duration': 49.5,   # seconds of intro music to trim
+    'intro_trs': 33,          # intro_duration / TR
+    'story_onset': 49.5,      # seconds when story narration begins
+    'story_duration': 408.0,  # seconds of story (social condition)
     'expected_networks': ['DMN', 'TPJ'],
-    'description': 'Participants judge whether animated shapes move intentionally or randomly',
+    'description': 'Subjects listened to social vs physical descriptions of same animated shapes',
 }
 
-# =============================================================================
-# COGNITIVE PROCESSING MODES
-# =============================================================================
-
-PROCESSING_MODES = {
-    'heuristic': {
-        'name': 'Heuristic / Intuitive',
-        'description': 'Fast, automatic, pattern-based processing',
-        'system': 'System 1',
-        'networks': ['DMN', 'TPJ', 'mPFC'],
-        'color': '#2ecc71',  # Green
-    },
-    'analytical': {
-        'name': 'Analytical / Deliberate',
-        'description': 'Slow, effortful, rule-based processing',
-        'system': 'System 2',
-        'networks': ['FPN', 'DAN', 'DLPFC'],
-        'color': '#e74c3c',  # Red
-    },
+# Mental-state keywords for attention specialization analysis
+MENTAL_STATE_WORDS = {
+    'agents': ['boy', 'father', 'friend', 'monster', 'son', 'dad'],
+    'mental_verbs': ['wants', 'tries', 'believes', 'thinks', 'dreams',
+                     'feels', 'notices', 'knows', 'hopes', 'plans'],
+    'mental_states': ['frightened', 'excited', 'disappointed', 'desperate',
+                      'uncertain', 'peaceful', 'forlornly', 'unenthusiastically'],
+    'social_actions': ['chasing', 'escaping', 'sneaks', 'greets', 'calls',
+                       'wakes', 'tucks', 'kisses', 'speaks', 'talks'],
 }
 
 # =============================================================================
@@ -512,32 +517,20 @@ FIGURE_PARAMS = {
 }
 
 # =============================================================================
-# FILE PATH FUNCTIONS
+# FILE PATH FUNCTIONS (ds002345)
 # =============================================================================
 
-def get_social_fmri_path(subject, run='LR'):
-    """Get path to Social task fMRI data"""
-    return (DATA_ROOT / subject / "MNINonLinear" / "Results" / 
-            f"tfMRI_SOCIAL_{run}" / 
-            f"tfMRI_SOCIAL_{run}_Atlas_MSMAll_hp0_clean_rclean_tclean.dtseries.nii")
+def get_fmri_path(subject, task='shapessocial'):
+    """Get path to ds002345 BOLD data"""
+    return DS002345_FMRI / subject / "func" / f"{subject}_task-{task}_bold.nii.gz"
 
-def get_social_evs_path(subject, run='LR'):
-    """Get path to Social task EVs directory"""
-    return (DATA_ROOT / subject / "MNINonLinear" / "Results" / 
-            f"tfMRI_SOCIAL_{run}" / "EVs")
+def get_events_path(subject, task='shapessocial'):
+    """Get path to ds002345 events file"""
+    return DS002345_FMRI / subject / "func" / f"{subject}_task-{task}_events.tsv"
 
-def get_social_stats_path(subject, run='LR'):
-    """Get path to Social task behavioral stats"""
-    return (DATA_ROOT / subject / "MNINonLinear" / "Results" / 
-            f"tfMRI_SOCIAL_{run}" / "EVs" / "Social_Stats.csv")
-
-def get_p1_results_path():
-    """Get path to Project 1 results"""
-    return PROJECT_1_DIR / "results" / "latest"
-
-def get_p2_results_path():
-    """Get path to Project 2 results"""
-    return PROJECT_2_DIR / "results"
+def get_transcript_path(task='shapessocial'):
+    """Get path to whisper transcript"""
+    return DS002345_TRANSCRIPTS / f"{task}_transcript.txt"
 
 # =============================================================================
 # LOGGING CONFIGURATION
