@@ -74,7 +74,7 @@ ROI time series were extracted from six social brain regions defined by establis
 
 \subsection{Transformer Models}
 
-We analyzed four transformer models spanning roughly 20$\times$ in parameter count (Table~\ref{tab:models}): GPT-2-Medium (355M), GPT-2-XL (1.5B), Mistral-7B, and Qwen2-7B. Models were loaded from Hugging Face \cite{wolf2020transformers} with bfloat16 precision for the 7B models (float16 caused numerical overflow in Qwen2's logits, producing NaN outputs; bfloat16 preserves the dynamic range needed for stable forward passes) and float32 for the GPT-2 models. Two additional planned models (DeepSeek-MoE-16B and Phi-3-Mini) were excluded due to software compatibility issues.
+We analyzed four transformer models spanning roughly 20$\times$ in parameter count (Table~\ref{tab:models}): GPT-2-Medium (355M), GPT-2-XL (1.5B), Mistral-7B, and Qwen2-7B. Models were loaded from Hugging Face \cite{wolf2020transformers} with bfloat16 precision for the 7B models (float16 caused numerical overflow in Qwen2's logits, producing NaN outputs; bfloat16 preserves the dynamic range needed for stable forward passes) and float32 for the GPT-2 models.
 
 \begin{table}[t]
 \centering

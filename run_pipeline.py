@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 =============================================================================
-Project 3 Analysis Pipeline: Adaptive Heuristics in Social Cognition
-CogSci 2026 Submission
+Analysis Pipeline: Attention Mechanisms for Theory of Mind
+IEEE BIBM 2026 Submission (revised from CogSci 2026 #3240)
 =============================================================================
 
-"When Fast is Better: Neural Signatures of Adaptive Heuristics in Social Cognition"
+"Attention Mechanisms for Theory of Mind:
+ Weak Brain-Transformer Alignment Despite Behavioral Success"
 
 Complete pipeline for analyzing brain-Transformer alignment in social cognition,
 with deep mechanistic analysis of attention patterns.
@@ -30,8 +31,8 @@ Usage:
     python run_pipeline.py --stage 1 2 3      # Run specific stages
     python run_pipeline.py --from 5           # Run from stage 5 onwards
     python run_pipeline.py --to 9             # Run up to stage 9
-    python run_pipeline.py --from 5 --to 9    # Run stages 5-9
-    python run_pipeline.py --visualize        # Only run visualization stages (9, 11, 13)
+    python run_pipeline.py --from 4 --to 9    # Run stages 4-9
+    python run_pipeline.py --visualize        # Only run the visualization stage (9)
     python run_pipeline.py --list             # List all stages
 """
 
@@ -55,74 +56,49 @@ from configs import config
 
 STAGES = {
     1: {
-        'name': 'Behavioral Analysis',
-        'script': 's01_behavioral_analysis.py',
-        'description': 'Extract RT and accuracy, compute heuristic index',
+        'name': 'fMRI Preprocessing',
+        'script': 's01_fmri_preprocessing.py',
+        'description': 'Preprocess ds002345 BOLD, extract ROI time series (N=58)',
     },
     2: {
-        'name': 'Brain Activation Analysis',
-        'script': 's02_brain_activation.py',
-        'description': 'Analyze ToM ROI activation and brain sparsity',
+        'name': 'Whole-Brain Contrast',
+        'script': 's01b_wholebrain_contrast.py',
+        'description': 'Group-level voxel-wise social > physical t-map',
     },
     3: {
-        'name': 'Transformer Extraction',
-        'script': 's03_transformer_extraction.py',
-        'description': 'Extract attention weights from transformer models',
+        'name': 'LLM Feature Extraction',
+        'script': 's02_llm_extraction.py',
+        'description': 'Time-resolved hidden states from 4 transformers on the transcripts',
     },
     4: {
-        'name': 'Probing Analysis',
-        'script': 's04_probing_analysis.py',
-        'description': 'Train probing classifiers on hidden states',
+        'name': 'Encoding Models',
+        'script': 's03_encoding_models.py',
+        'description': 'Brain<->model alignment (core result: best r ~ 0.04, 0/786 survive FDR)',
     },
     5: {
-        'name': 'Causal Analysis',
-        'script': 's05_causal_analysis.py',
-        'description': 'Identify causal circuits via ablation',
+        'name': 'Attention Analysis',
+        'script': 's04_attention_analysis.py',
+        'description': 'Attention sparsity and specialization (Gini 0.66-0.77)',
     },
     6: {
-        'name': 'RSA Alignment',
-        'script': 's06_rsa_alignment.py',
-        'description': 'Brain-model representational similarity analysis',
+        'name': 'Causal Analysis',
+        'script': 's05_causal_analysis.py',
+        'description': 'Attention-head ablation; top-5% heads drive mental-state prediction',
     },
     7: {
-        'name': 'Encoding Models',
-        'script': 's07_encoding_models.py',
-        'description': 'Predict brain activity from model layers',
+        'name': 'Probing',
+        'script': 's06_probing.py',
+        'description': 'Linear probes: social vs physical from hidden states (81-88%)',
     },
     8: {
-        'name': 'Cross-Project Integration',
-        'script': 's08_cross_project.py',
-        'description': 'Integrate findings across P1, P2, and P3',
+        'name': 'Behavioral ToM Benchmark',
+        'script': 's08_behavioral_tom.py',
+        'description': 'False belief / faux pas / intention (7B: 75-83%)',
     },
     9: {
-        'name': 'Basic Visualization',
-        'script': 's09_visualization.py',
-        'description': 'Generate basic publication figures (PNG + SVG)',
-    },
-    10: {
-        'name': 'Advanced Analysis',
-        'script': 's10_advanced_analysis.py',
-        'description': 'Geometry, attention clustering, CKA, circuit discovery',
-    },
-    11: {
-        'name': 'Advanced Visualization',
-        'script': 's11_advanced_visualization.py',
-        'description': 'Generate advanced scientific figures (PNG + SVG)',
-    },
-    12: {
-        'name': 'Temporal Dynamics Analysis',
-        'script': 's12_temporal_analysis.py',
-        'description': 'Dynamic connectivity, phase synchrony, attention evolution',
-    },
-    13: {
-        'name': 'Temporal Visualization',
-        'script': 's13_temporal_visualization.py',
-        'description': 'Generate temporal dynamics figures (PNG + SVG)',
-    },
-    14: {
-        'name': 'Glass Brain Visualization',
-        'script': 's14_glass_brain_visualization.py',
-        'description': 'Generate glass brain figures for ToM activation (PNG + SVG)',
+        'name': 'Visualization',
+        'script': 's07_visualization.py',
+        'description': 'Publication-quality figures (PDF)',
     },
 }
 
@@ -179,12 +155,12 @@ def run_pipeline(stages=None, start_stage=1, end_stage=14):
     config.initialize_run_directories(timestamp)
     
     print("\n" + "="*70)
-    print("  PROJECT 3: ADAPTIVE HEURISTICS IN SOCIAL COGNITION")
-    print("  CogSci 2026 Analysis Pipeline")
+    print("  ATTENTION MECHANISMS FOR THEORY OF MIND")
+    print("  IEEE BIBM 2026 Analysis Pipeline")
     print("="*70)
     print(f"\nStart time: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Results directory: {config.CURRENT_RUN_DIR}")
-    print(f"Data directory: {config.DATA_ROOT}")
+    print(f"Data directory: {config.DATA_DIR}")
     print(f"Number of subjects: {len(config.SUBJECTS)}")
     
     # Determine which stages to run
@@ -240,14 +216,14 @@ def run_pipeline(stages=None, start_stage=1, end_stage=14):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Run Project 3 Analysis Pipeline',
+        description='Run the Attention-ToM (BIBM 2026) analysis pipeline',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
     python run_pipeline.py                    # Run all stages
     python run_pipeline.py --stage 1 2 3      # Run specific stages
     python run_pipeline.py --from 5           # Run from stage 5 onwards
-    python run_pipeline.py --from 5 --to 9    # Run stages 5-9
+    python run_pipeline.py --from 4 --to 9    # Run stages 4-9
     python run_pipeline.py --visualize        # Only run visualization stages
         """
     )
@@ -266,13 +242,13 @@ Examples:
     parser.add_argument(
         '--to', dest='end',
         type=int,
-        default=14,
-        help='End at this stage (default: 14)'
+        default=9,
+        help='End at this stage (default: 9)'
     )
     parser.add_argument(
         '--visualize', '-v',
         action='store_true',
-        help='Only run visualization stages (9, 11, 13)'
+        help='Only run the visualization stage (9)'
     )
     parser.add_argument(
         '--list', '-l',
@@ -294,7 +270,7 @@ Examples:
     
     if args.visualize:
         # Run only visualization stages
-        success = run_pipeline(stages=[9, 11, 13])
+        success = run_pipeline(stages=[9])
     elif args.stage:
         # Run specific stages
         success = run_pipeline(stages=args.stage)

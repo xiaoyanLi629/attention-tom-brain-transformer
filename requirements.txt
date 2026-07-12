@@ -1,5 +1,5 @@
-# Project 3: Adaptive Heuristics in Social Cognition
-# Dependencies
+# Attention Mechanisms for Theory of Mind
+# IEEE BIBM 2026 submission - dependencies
 
 # Data processing
 numpy>=1.21.0
@@ -12,6 +12,12 @@ nilearn>=0.9.0
 
 # Machine learning
 scikit-learn>=1.0.0
+joblib>=1.1.0
+
+# Transformers (s02 LLM feature extraction, s05 causal ablation, s06 probing)
+torch>=2.0.0
+transformers>=4.35.0
+accelerate>=0.24.0
 
 # Visualization
 matplotlib>=3.5.0

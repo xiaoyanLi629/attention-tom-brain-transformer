@@ -16,9 +16,8 @@ from pathlib import Path
 # =============================================================================
 
 # Base paths — everything lives under the project directory on autodl-fs
-PROJECT_DIR = Path("/autodl-fs/data/CCN_Competition/"
-                   "Attention Mechanisms for Theory of Mind "
-                   "Weak Brain-Transformer Alignment Despite Behavioral Success")
+# Resolved relative to this file, so the project can be moved or renamed freely.
+PROJECT_DIR = Path(__file__).resolve().parent.parent
 
 # Data paths
 DATA_DIR = PROJECT_DIR / "data"
@@ -234,21 +233,9 @@ NETWORK_ORDER = ['DMN', 'TPJ', 'mPFC', 'FPN', 'DAN', 'VIS', 'SMN']
 # =============================================================================
 
 TRANSFORMER_CONFIG = {
+    # The four models reported in the manuscript, in the order used by
+    # scripts/s07_visualization.py (MODEL_ORDER).
     'models': [
-        {
-            'name': 'deepseek-ai/deepseek-moe-16b-base',
-            'short_name': 'DeepSeek-MoE-16B',
-            'type': 'Causal LM (MoE)',
-            'parameters': '16B (2.8B active)',
-            'n_layers': 28,
-            'n_heads': 16,
-            'hidden_size': 2048,
-            'intermediate_size': 10944,
-            'architecture': 'DeepSeek MoE',
-            'num_experts': 64,
-            'num_experts_per_tok': 6,
-            'description': 'Mixture of Experts model with sparse activation, highly efficient',
-        },
         {
             'name': 'Qwen/Qwen2-7B',
             'short_name': 'Qwen2-7B',
@@ -260,18 +247,6 @@ TRANSFORMER_CONFIG = {
             'intermediate_size': 18944,
             'architecture': 'Qwen2',
             'description': 'State-of-the-art multilingual model with strong reasoning',
-        },
-        {
-            'name': 'microsoft/Phi-3-mini-4k-instruct',
-            'short_name': 'Phi-3-Mini',
-            'type': 'Causal LM',
-            'parameters': '3.8B',
-            'n_layers': 32,
-            'n_heads': 32,
-            'hidden_size': 3072,
-            'intermediate_size': 8192,
-            'architecture': 'Phi3',
-            'description': 'Efficient small model with strong performance',
         },
         {
             'name': 'mistralai/Mistral-7B-v0.1',
@@ -310,6 +285,7 @@ TRANSFORMER_CONFIG = {
             'description': 'Smaller baseline for comparison',
         },
     ],
+
     'inference': {
         'max_length': 256,
         'temperature': 0.0,  # Deterministic
@@ -570,36 +546,7 @@ def setup_logging(name, level=logging.INFO):
 # CROSS-PROJECT INTEGRATION HELPERS
 # =============================================================================
 
-def load_p1_efficiency_groups():
-    """Load efficiency group assignments from Project 1"""
-    import json
-    p1_path = get_p1_results_path()
-    
-    # Try to find efficiency groups file
-    possible_paths = [
-        p1_path / "behavioral" / "efficiency_groups.json",
-        p1_path / "behavioral" / "flexibility_groups.csv",
-    ]
-    
-    for path in possible_paths:
-        if path.exists():
-            if path.suffix == '.json':
-                with open(path) as f:
-                    return json.load(f)
-            else:
-                import pandas as pd
-                return pd.read_csv(path)
-    
-    return None
-
-def load_p2_sparsity_metrics():
-    """Load sparsity metrics from Project 2"""
-    import pandas as pd
-    p2_path = get_p2_results_path()
-    
-    sparsity_path = p2_path / "neuroscience" / "sparsity_metrics.csv"
-    if sparsity_path.exists():
-        return pd.read_csv(sparsity_path)
-    
-    return None
-
+# NOTE: load_p1_efficiency_groups() / load_p2_sparsity_metrics() were removed.
+# They were leftovers from the CogSci-era cross-project (P1/P2/P3) framework and
+# called get_p1_results_path() / get_p2_results_path(), which never existed ->
+# NameError on any call. No script in the BIBM pipeline uses them.

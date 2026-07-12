@@ -86,3 +86,7 @@ sources/
 *.synctex.gz
 *.out
 *.toc
+
+# LaTeX build artifacts
+*.bbl
+*.blg
