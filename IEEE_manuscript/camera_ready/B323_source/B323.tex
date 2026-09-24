@@ -21,13 +21,12 @@
 
 \title{Attention Mechanisms for Theory of Mind: Weak Brain-Transformer Alignment Despite Behavioral Success}
 
-\author{\IEEEauthorblockN{Xiaoyan Li\textsuperscript{*}}
+\author{\IEEEauthorblockN{Xiaoyan Li}
 \IEEEauthorblockA{\textit{Dept. of Computational Mathematics,} \\
 \textit{Science and Engineering} \\
 \textit{Michigan State University}\\
 East Lansing, MI, USA \\
-lixiaoy5@msu.edu \\
-\textsuperscript{*}\textit{Corresponding author}}
+lixiaoy5@msu.edu}
 \and
 \IEEEauthorblockN{Cuicui Jiang}
 \IEEEauthorblockA{\textit{College of Computer Science} \\
@@ -35,7 +34,7 @@ lixiaoy5@msu.edu \\
 Hohhot, China \\
 jiangcuicui@mail.imu.edu.cn}
 \and
-\IEEEauthorblockN{Jiaoping Chen}
+\IEEEauthorblockN{Jiaoping Chen\textsuperscript{*}}
 \IEEEauthorblockA{\textit{Merrick School of Business} \\
 \textit{University of Baltimore}\\
 Baltimore, MD, USA \\
@@ -61,6 +60,9 @@ Jinzhong, China \\
 }
 
 \maketitle
+
+% Corresponding-author note at the bottom of the first (left) column
+{\renewcommand{\thefootnote}{}\footnotetext{\textsuperscript{*}Corresponding author: Jiaoping Chen (jchen@ubalt.edu).}}
 
 \begin{abstract}
 Theory of Mind (ToM), the capacity to attribute mental states to others, provides a critical test for evaluating whether language models develop genuine social understanding. We compared ToM processing in human brains (N=58, fMRI) and four transformer models (355M--7B parameters) using a modality-matched paradigm: participants listened to social versus physical descriptions of the same animated shapes, while models processed identical text transcripts. Behaviorally, 7B models achieved $75$--$83\%$ accuracy on classic ToM items (false belief, faux pas, intention), while GPT-2 variants hovered near $50\%$. Linear probes separated social from physical narrative content in model hidden states (89--98\% accuracy, versus 74\% for a bag-of-words baseline), and causal attention-head ablation identified individual heads with large effects on mental-state word prediction, although the top-5\% head set was only partly stable across 19 narrative-derived prompts. However, time-resolved encoding models produced weak brain-transformer alignment (best $r = 0.047$ in mPFC, about 19\% of the noise-ceiling upper bound); no best-layer encoding survived Benjamini--Hochberg FDR correction under unbiased layer selection, and alignment stayed weak across hemodynamic lags, nonlinear encoders and smaller ROIs. Social narratives yielded numerically higher encoding in 86\% of model$\times$layer$\times$ROI contrasts, but none of the 792 contrasts survived FDR correction, while the brain itself showed a clear voxel-wise fronto-temporal pattern for social $>$ physical processing. Attention was reliably, though only slightly, sparser for social narratives (paired tests across layers). These findings point to a dissociation between behavioral competence and representational alignment: current transformers pass ToM behavioral tests yet process social content through mechanisms that weakly align with human neural representations, suggesting fundamentally different computational strategies for social cognition. Code is publicly available at \url{https://github.com/xiaoyanLi629/attention-tom-brain-transformer}.
