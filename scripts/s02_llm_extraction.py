@@ -65,6 +65,8 @@ def load_transformer_model(model_config):
         cache_dir=config.MODEL_CACHE_DIR,
         output_attentions=True,
         output_hidden_states=True,
+        # SDPA/flash kernels do not return attention weights
+        attn_implementation="eager",
     )
 
     if torch.cuda.is_available():
@@ -228,6 +230,12 @@ def extract_tr_aligned_features(model, tokenizer, text, word_to_tr, n_story_trs,
         if tok_start == tok_end:  # special token
             token_to_word_idx.append(-1)
             continue
+        # Byte-level BPE / SentencePiece offsets include the leading space
+        # (e.g. " boy" starts at the space), which would place tok_start one
+        # character before the word and leave most word-initial tokens
+        # unmapped. Skip leading whitespace before matching.
+        while tok_start < tok_end and text[tok_start].isspace():
+            tok_start += 1
         best_word = -1
         for wi, wstart in enumerate(word_char_starts):
             if wi < len(words_in_text):
@@ -237,28 +245,17 @@ def extract_tr_aligned_features(model, tokenizer, text, word_to_tr, n_story_trs,
                     break
         token_to_word_idx.append(best_word)
 
-    # Build word_idx → tr_idx mapping from Stage 1 output
-    # word_to_tr entries are only for story words (after intro trimming)
-    # We need to map story words to their sequential index in the full text
-    story_words = [w['word'] for w in word_to_tr]
-
-    # Find where story words start in the full word list
-    # Story starts after intro music words
-    story_start_word_idx = None
-    for i, w in enumerate(words_in_text):
-        if i < len(words_in_text) - len(story_words) + 1:
-            if words_in_text[i] == story_words[0] and words_in_text[i+1] == story_words[1]:
-                story_start_word_idx = i
-                break
-
-    if story_start_word_idx is None:
-        logger.warning("  Could not align story words to transcript, using all words")
-        story_start_word_idx = 0
-
-    # Create word_idx → TR mapping
+    # Build word_idx → tr_idx mapping from Stage 1 output. The model text is
+    # the whisper word sequence itself (see run_stage2), so each entry's
+    # word_idx indexes words_in_text directly. Verify rather than search:
+    # a silent fallback here once shifted every TR by ~80 words.
     word_idx_to_tr = {}
-    for si, entry in enumerate(word_to_tr):
-        word_idx_to_tr[story_start_word_idx + si] = entry['tr_idx']
+    for entry in word_to_tr:
+        wi = entry['word_idx']
+        if wi >= len(words_in_text) or words_in_text[wi] != entry['word']:
+            raise ValueError(f"word_to_tr entry {entry} does not match transcript word "
+                             f"{words_in_text[wi] if wi < len(words_in_text) else None!r}")
+        word_idx_to_tr[wi] = entry['tr_idx']
 
     # Create token → TR mapping
     token_to_tr = []
@@ -338,13 +335,18 @@ def run_stage2():
     n_story_trs = sample_ts.shape[0]
     logger.info(f"Story TRs from fMRI: {n_story_trs}")
 
-    # Load transcripts (story portion only, skip intro)
+    # Model input = the whisper word sequence (intro included, so the story
+    # is read in context). Using the timestamped words rather than the
+    # segment-level transcript keeps word indices identical to Stage 1's
+    # word_idx; the two whisper outputs differ by a few words.
     transcripts = {}
     for task in ['shapessocial', 'shapesphysical']:
-        txt_path = config.DS002345_TRANSCRIPTS / f"{task}_transcript.txt"
-        if txt_path.exists():
-            transcripts[task] = txt_path.read_text().strip()
-            logger.info(f"  {task} transcript: {len(transcripts[task].split())} words")
+        words_path = config.DS002345_TRANSCRIPTS / f"{task}_words.txt"
+        if words_path.exists():
+            with open(words_path) as f:
+                words = [line.rstrip('\n').split('\t')[2] for line in f if line.strip()]
+            transcripts[task] = ' '.join(words)
+            logger.info(f"  {task} transcript: {len(words)} words")
 
     # Get model configs
     models = config.TRANSFORMER_CONFIG['models']

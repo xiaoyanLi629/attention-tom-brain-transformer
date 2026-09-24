@@ -56,6 +56,7 @@ ROI_NAMES = list(SOCIAL_BRAIN_ROIS.keys())
 TR = config.SHAPES_TASK['tr']                    # 1.5s
 INTRO_TRS = config.SHAPES_TASK['intro_trs']      # 33 TRs to trim
 STORY_ONSET = config.SHAPES_TASK['story_onset']  # 49.5s
+AUDIO_ONSET = config.SHAPES_TASK['audio_onset']  # 4.5s: audio file start on the scan clock
 SMOOTH_FWHM = 6  # mm
 HIGH_PASS_FREQ = 0.01  # Hz
 
@@ -227,11 +228,15 @@ def process_subject(sub_id, task_name, roi_masks, output_dir, mni_template):
 def build_word_to_tr_mapping(transcript_dir):
     """Build mapping from word index to TR index for each task.
 
-    Uses whisper word-level timestamps. TR indexing starts from 0
-    after intro trimming (i.e., TR 0 = story onset).
+    Uses whisper word-level timestamps. Whisper times are relative to the
+    start of the audio file, which begins AUDIO_ONSET seconds into the scan
+    (the "music" event in events.tsv), so they are shifted onto the scan
+    clock before binning. TR indexing starts from 0 after intro trimming
+    (i.e., TR 0 = story onset).
 
     Returns:
-        dict: {task_name: [{word, start, end, tr_idx}, ...]}
+        dict: {task_name: [{word, word_idx, start, end, tr_idx}, ...]}
+        where word_idx indexes the full whisper word list (intro included).
     """
     mapping = {}
 
@@ -242,24 +247,29 @@ def build_word_to_tr_mapping(transcript_dir):
             continue
 
         words = []
+        word_idx = -1
         with open(words_file) as f:
             for line in f:
                 parts = line.strip().split('\t')
                 if len(parts) >= 3:
+                    word_idx += 1
                     start = float(parts[0])
                     end = float(parts[1])
                     word = parts[2]
 
-                    # Skip intro music words (before story onset)
-                    if start < STORY_ONSET:
-                        continue
+                    # Story-relative time on the scan clock
+                    word_time_relative = start + AUDIO_ONSET - STORY_ONSET
 
-                    # Compute TR index relative to story onset
-                    word_time_relative = start - STORY_ONSET
-                    tr_idx = int(word_time_relative / TR)
+                    # Skip intro music words. Whisper word onsets run ~0.5s
+                    # early, so the first story words can fall just before
+                    # the onset; keep anything within 1s and put it in TR 0.
+                    if word_time_relative < -1.0:
+                        continue
+                    tr_idx = max(0, int(word_time_relative / TR))
 
                     words.append({
                         'word': word,
+                        'word_idx': word_idx,
                         'start': start,
                         'end': end,
                         'start_relative': word_time_relative,

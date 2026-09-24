@@ -2,7 +2,8 @@
 
 **Weak Brain-Transformer Alignment Despite Behavioral Success**
 
-IEEE BIBM 2026 submission (revised from CogSci 2026 #3240, rejected).
+IEEE BIBM 2026, regular paper B323 (camera-ready). Camera-ready source and PDF:
+`IEEE_manuscript/camera_ready/`.
 
 ---
 
@@ -21,18 +22,25 @@ process the identical text transcripts.
 | Finding | Result |
 |---|---|
 | Behavioral ToM (false belief, faux pas, intention) | 7B models **75–83%**; GPT-2 variants near chance (~50%) |
-| Linear probing (social vs. physical from hidden states) | **81–88%** accuracy |
-| Causal attention-head ablation | Top-5% of heads (mid-layers) drive mental-state prediction; a **single GPT-2-Medium head carries 25%** of the baseline logit gap |
-| **Time-resolved encoding (brain ↔ model)** | **Weak: best r ≈ 0.04** (noise ceiling ≈ 0.16–0.25) |
-| **Social-vs-physical encoding advantage, after BH-FDR** | **Disappears entirely — 0/786 contrasts survive** |
+| Linear probing (social vs. physical from hidden states) | **89–98%** accuracy (bag-of-words baseline: 74%) |
+| **Time-resolved encoding (brain ↔ model)** | **Weak: best r = 0.047** (mPFC, Qwen2-7B; ≈19% of the noise-ceiling upper bound) |
+| Best-layer encoding vs. zero (leave-one-subject-out layer choice, BH-FDR) | **0/48 cells survive** (smallest q = 0.09) |
+| Robustness | Unchanged across HRF lags 0–6 TRs, kernel ridge / MLP encoders, 8 mm and 6 mm ROIs, GPT-2 truncation |
+| Social-vs-physical encoding contrast | 86% of 792 contrasts favour social, **0 survive BH-FDR** |
 | Brain itself (voxel-wise) | Clear fronto-temporal social > physical pattern |
-| Attention sparsity | Slightly higher for social narratives (Gini 0.66–0.77) |
+| Attention sparsity | Reliably but slightly sparser for social narratives (paired over layers) |
+| Causal attention-head ablation | Individual heads with large effects (GPT-2-Medium L6H1); the top-5% set is only partly stable across 19 prompts |
 
-> **Note on an earlier version of this README.** It reported strong RSA alignment
-> (r = 0.42–0.62) and a large causal circuit (198–425 heads). Those numbers came
-> from the rejected CogSci pipeline and **do not survive** the corrected analysis.
-> The current, FDR-corrected result is the *weak-alignment null* above. If you are
-> reviewing this repository against the manuscript, the manuscript is correct.
+> **Camera-ready correction (2026-09).** Stage 2 originally mis-aligned model
+> features and fMRI: word-initial tokens were not matched to words (byte-level /
+> SentencePiece offsets include the leading space, so only ~15% of words were
+> mapped), the story-start search silently fell back to offset 0 (every TR got
+> features from ~80 words earlier), and the 4.5 s audio onset in the scan was
+> ignored. All three are fixed (`scripts/s01_fmri_preprocessing.py`,
+> `scripts/s02_llm_extraction.py`); the story now spans exactly the 272 / 270 TRs
+> of the dataset metadata. PCA uses an exact SVD so results are reproducible.
+> Numbers above come from the corrected run; the reviewer-requested analyses are in
+> `scripts/camera_ready/` (`run_cpu_chain.sh` reruns the CPU part).
 
 ## Data
 
@@ -40,8 +48,8 @@ process the identical text transcripts.
 59 subjects; sub-115 excluded → **N=58 analyzed**.
 
 - `data/ds002345/fmri/` — preprocessed BOLD
-- `data/ds002345/transcripts/` — `shapessocial_transcript.txt`, `shapesphysical_transcript.txt`
-  (the text the models see; this is what makes the paradigm modality-matched)
+- `data/ds002345/transcripts/` — Whisper output; `*_words.txt` (word-level timestamps)
+  is the text the models see; this is what makes the paradigm modality-matched
 - `data/ds000109/` — a second ToM dataset, kept as a backup. **Not used** by any
   script in the current pipeline or by the manuscript.
 
@@ -94,11 +102,12 @@ Attention_ToM/
 ├── run_pipeline.py
 ├── configs/config.py           # paths, model list, ROIs
 ├── scripts/                    # s01–s08 (see table above)
+│   └── camera_ready/           # reviewer-requested analyses (cr00–cr11, run_cpu_chain.sh)
 ├── data/                       # ds002345 (used), ds000109 (backup, unused)
 ├── models/huggingface_cache/   # 4 transformers (+2 unused entries in config)
 ├── results/
 ├── logs/
-├── IEEE_manuscript/            # ← current BIBM submission
+├── IEEE_manuscript/            # submitted version; camera_ready/ = final PDF + source
 ├── manuscript/                 # CogSci version (rejected, superseded; gitignored)
 ├── REVISION_PLAN.md            # internal notes on the CogSci → BIBM rewrite
 └── sources/                    # private research notes (gitignored)
@@ -107,9 +116,11 @@ Attention_ToM/
 ## Citation
 
 ```bibtex
-@inproceedings{attention_tom_2026,
+@inproceedings{li2026attention_tom,
   title     = {Attention Mechanisms for Theory of Mind: Weak Brain-Transformer
                Alignment Despite Behavioral Success},
+  author    = {Li, Xiaoyan and Jiang, Cuicui and Chen, Jiaoping and Yang, Rumei
+               and Liu, Xingyue and Wei, Jiaxuan},
   booktitle = {IEEE International Conference on Bioinformatics and Biomedicine (BIBM)},
   year      = {2026}
 }
@@ -117,4 +128,4 @@ Attention_ToM/
 
 ---
 
-*Last updated: 2026-07 · N=58 · ds002345 · 4 transformers · 8 pipeline stages*
+*Last updated: 2026-09 (camera-ready) · N=58 · ds002345 · 4 transformers · 8 pipeline stages*

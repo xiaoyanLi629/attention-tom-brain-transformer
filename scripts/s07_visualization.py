@@ -45,6 +45,9 @@ plt.rcParams.update({
     'legend.frameon': False,
     'figure.facecolor': 'white',
     'savefig.dpi': 300,
+    # Embed TrueType (Type 42) rather than Type 3 fonts; IEEE PDF eXpress rejects Type 3
+    'pdf.fonttype': 42,
+    'ps.fonttype': 42,
 })
 
 SOCIAL_COLOR = '#E74C3C'
@@ -303,12 +306,12 @@ def plot_fig2(figures_dir, results_dir):
                     if len(sub) > 0:
                         matrix[mi, ri] = sub.groupby('layer')['encoding_r'].mean().max()
 
-            sns.heatmap(matrix, ax=ax, annot=True, fmt='.2f', cmap='RdBu_r',
-                        center=0, vmin=-0.02, vmax=0.04,
+            sns.heatmap(matrix, ax=ax, annot=True, fmt='.3f', cmap='RdBu_r',
+                        center=0, vmin=-0.025, vmax=0.05,
                         xticklabels=ROI_NAMES, yticklabels=models,
                         cbar_kws={'label': 'Encoding r', 'shrink': 0.8},
                         linewidths=0.5, linecolor='white',
-                        annot_kws={'fontsize': 18})
+                        annot_kws={'fontsize': 15})
             ax.set_title(title_label, fontweight='bold', fontsize=22, loc='left')
             ax.tick_params(axis='both', labelsize=17)
             cbar = ax.collections[0].colorbar

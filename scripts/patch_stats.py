@@ -106,7 +106,7 @@ def patch_probing_pvalues(cross_domain_dir, features_dir, n_jobs=8):
         X, y = X[~bad], y[~bad]
 
         n_comp = min(PCA_COMPONENTS, X.shape[0] - 1, X.shape[1])
-        X_pca = PCA(n_components=n_comp).fit_transform(X)
+        X_pca = PCA(n_components=n_comp, svd_solver="full").fit_transform(X)
 
         real_acc = probe_layer(X_pca, y)
         seeds = [int(s.generate_state(1)[0])

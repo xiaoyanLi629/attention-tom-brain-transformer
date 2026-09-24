@@ -276,7 +276,7 @@ def run_stage3():
 
                 # PCA dimensionality reduction
                 n_components = min(PCA_COMPONENTS, X_shifted.shape[0] - 1, X_shifted.shape[1])
-                pca = PCA(n_components=n_components)
+                pca = PCA(n_components=n_components, svd_solver="full")
                 X_pca = pca.fit_transform(X_shifted)
 
                 # Encode each subject × ROI

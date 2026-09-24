@@ -150,6 +150,7 @@ SHAPES_TASK = {
     'intro_duration': 49.5,   # seconds of intro music to trim
     'intro_trs': 33,          # intro_duration / TR
     'story_onset': 49.5,      # seconds when story narration begins
+    'audio_onset': 4.5,       # scan time at which the audio file starts (music event onset in events.tsv)
     'story_duration': 408.0,  # seconds of story (social condition)
     'expected_networks': ['DMN', 'TPJ'],
     'description': 'Subjects listened to social vs physical descriptions of same animated shapes',

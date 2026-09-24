@@ -171,7 +171,7 @@ def run_stage6(n_jobs=1):
 
             # PCA
             n_comp = min(PCA_COMPONENTS, X.shape[0] - 1, X.shape[1])
-            pca = PCA(n_components=n_comp)
+            pca = PCA(n_components=n_comp, svd_solver="full")
             X_pca = pca.fit_transform(X)
 
             # Probe with permutation test (only for every 4th layer to save time)
@@ -225,7 +225,7 @@ def run_stage6(n_jobs=1):
             y = y[~nan_mask]
 
         n_comp = min(PCA_COMPONENTS, X.shape[0] - 1, X.shape[1])
-        X_pca = PCA(n_components=n_comp).fit_transform(X)
+        X_pca = PCA(n_components=n_comp, svd_solver="full").fit_transform(X)
         _, p_val, _ = permutation_test(X_pca, y, n_permutations=N_PERMUTATIONS, n_jobs=n_jobs)
         results_df.loc[best_idx, 'p_value'] = p_val
         logger.info(f"  {model_name}: layer {best_layer} p = {p_val:.4f}")
